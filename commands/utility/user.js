@@ -2,11 +2,11 @@ const { SlashCommandBuilder } = require('discord.js');
 
 module.exports = {
 	data: new SlashCommandBuilder()
-		.setName('user')
-		.setDescription('Provides information about the user.'),
+		.setName('usuario')
+		.setDescription('Informa sobre você mesmo.'),
 	async execute(interaction) {
-		// interaction.user is the object representing the User who ran the command
-		// interaction.member is the GuildMember object, which represents the user in the specific guild
-		await interaction.reply(`This command was run by ${interaction.user.username}, who joined on ${interaction.member.joinedAt}.`);
+		// interaction.user representa o Usuario que usou o comando
+		// interaction.member representa o GuildMember object, que representa o usuario em um servidor especifico
+		await interaction.reply({ content: `**${interaction.user.username}**, entrou em: \`${interaction.member.joinedAt}.\``, ephemeral: true });
 	},
 };
