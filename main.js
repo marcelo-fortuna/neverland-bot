@@ -1,10 +1,9 @@
 const fs = require('node:fs');
 const path = require('node:path');
-// Require the necessary discord.js classes
 const { Client, Collection, Events, GatewayIntentBits } = require('discord.js');
 const { token } = require('./config.json');
 
-// Create a new client instance
+// Criar um novo objeto
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 client.commands = new Collection();
 
@@ -17,7 +16,7 @@ for (const folder of commandFolders) {
 	for (const file of commandFiles) {
 		const filePath = path.join(commandsPath, file);
 		const command = require(filePath);
-		// Set a new item in the Collection with the key as the command name and the value as the exported module
+		// Defina um novo item na Coleção com a chave como o nome do comando e o valor como o módulo exportado
 		if ('data' in command && 'execute' in command) {
 			client.commands.set(command.data.name, command);
 		} else {
@@ -32,7 +31,7 @@ client.on(Events.InteractionCreate, async interaction => {
 	const command = interaction.client.commands.get(interaction.commandName);
 
 	if (!command) {
-		console.error(`No command matching ${interaction.commandName} was found.`);
+		console.error(`Nenhum comando compativel ${interaction.commandName} foi achado.`);
 		return;
 	}
 
@@ -41,18 +40,17 @@ client.on(Events.InteractionCreate, async interaction => {
 	} catch (error) {
 		console.error(error);
 		if (interaction.replied || interaction.deferred) {
-			await interaction.followUp({ content: 'There was an error while executing this command!', ephemeral: true });
+			await interaction.followUp({ content: 'Aconteceu um erro ao executar esse comando!', ephemeral: true });
 		} else {
-			await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+			await interaction.reply({ content: 'Aconteceu um erro ao executar esse comando!', ephemeral: true });
 		}
 	}
 });
 
-// When the client is ready, run this code (only once)
-// We use 'c' for the event parameter to keep it separate from the already defined 'client'
+// Logar no Discord com o seu TOKEN
+client.login(token);
+
+// 'c' == client
 client.once(Events.ClientReady, c => {
 	console.log(`Logado como: ${c.user.tag}`);
 });
-
-// Log in to Discord with your client's token
-client.login(token);
