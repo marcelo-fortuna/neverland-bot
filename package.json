@@ -8,18 +8,15 @@
     "node": "16.x"
   },
   "scripts": {
-    "start": "node app.js",
-    "loadslash": "node commands.js",
-    "dev": "nodemon app.js"
+    "start": "loadslash && node app.js",
+    "dev": "loadslash && nodemon app.js",
+    "loadslash": "node refresh_commands.js"
   },
-  "author": "Nuts Neverland",
+  "author": "Nuts Neverland, RoyaL @orobertofc",
   "license": "ISC",
   "dependencies": {
-    "discord-interactions": "^3.2.0",
     "discord.js": "^14.14.1",
-    "dotenv": "^16.0.3",
-    "express": "^4.18.2",
-    "node-fetch": "^3.3.0"
+    "dotenv": "^16.0.3"
   },
   "devDependencies": {
     "nodemon": "^2.0.15"
