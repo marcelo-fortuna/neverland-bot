@@ -8,9 +8,9 @@
     "node": "16.x"
   },
   "scripts": {
-    "start": "loadslash && node app.js",
-    "dev": "loadslash && nodemon app.js",
-    "loadslash": "node refresh_commands.js"
+    "loadslash": "node refresh_commands.js",
+    "start": "npm run loadslash && node app.js",
+    "dev": "npm run loadslash && nodemon app.js"
   },
   "author": "Nuts Neverland, RoyaL @orobertofc",
   "license": "ISC",
