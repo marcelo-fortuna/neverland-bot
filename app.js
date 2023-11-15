@@ -1,174 +1,66 @@
-import 'dotenv/config';
-import express from 'express';
 import {
-  InteractionType,
-  InteractionResponseType,
-  InteractionResponseFlags,
-  MessageComponentTypes,
-  ButtonStyleTypes,
-} from 'discord-interactions';
-import { VerifyDiscordRequest, getRandomEmoji, DiscordRequest } from './utils.js';
-import { getShuffledOptions, getResult } from './game.js';
+  Client,
+  Events,
+  GatewayIntentBits
+} from 'discord.js';
+import 'dotenv/config';
+import { Logger } from './logger.js';
+//import { checks } from "./checks.js";
+import express from 'express';
+import { VerifyDiscordRequest } from './utils.js';
+
+const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
 // Create an express app
 const app = express();
-// Get port, or default to 3000
-const PORT = process.env.PORT || 3000;
 // Parse request body and verifies incoming requests using discord-interactions package
 app.use(express.json({ verify: VerifyDiscordRequest(process.env.PUBLIC_KEY) }));
 
-// Store for in-progress games. In production, you'd want to use a DB
-const activeGames = {};
+client.on('ready', () => { });
 
-/**
- * Interactions endpoint URL where Discord will send HTTP requests
- */
-app.post('/interactions', async function (req, res) {
-  // Interaction type and data
-  const { type, id, data } = req.body;
+client.on(Events.InteractionCreate, async interaction => {
+  try {
+    // Check basic stuff
+    //const check_passed = await checks(interaction);
+    //if (check_passed === false) return;
 
-  /**
-   * Handle verification requests
-   */
-  if (type === InteractionType.PING) {
-    return res.send({ type: InteractionResponseType.PONG });
+    // Handle command
+    const user = interaction.user;
+    const user_id = user.id;
+    const neverbar_server = client.guilds.cache.get('1169671375292731452');
+    const bot_channel = neverbar_server.channels.cache.get('1169671376085454859');
+
+    console.log(`User ${user_id} used a command`);
+
+    bot_channel.send("Isso é uma mensagem");
+
+    // Send private message to user
+    neverbar_server.channels.cache.get('1169671376085454859').send(`Hey <@${user_id}>! This is the new test zone, so you will be removed from the old test server. Enjoy!`);
+    
+    await interaction.reply({
+      content: 'Migration completed, you will be removed from this server in 5 seconds',
+      ephemeral: true
+    });
+
+    // Kick user from test server
+    setTimeout(() => {
+      Logger(`User <@${user_id}> migrated.`, client)
+    }, 5000)
+
+  } catch (error) {
+    try {
+      await interaction.reply({ content: 'Something went wrong, please contact the developer', ephemeral: true });
+    } catch (error) {
+      console.log(`Interaction Error: ${error} - ${client}`)
+    }
+    Logger(`Error: ${error}`, client)
   }
 
-  /**
-   * Handle slash command requests
-   * See https://discord.com/developers/docs/interactions/application-commands#slash-commands
-   */
-  if (type === InteractionType.APPLICATION_COMMAND) {
-    const { name } = data;
-
-    // "test" command
-    if (name === 'test') {
-      // Send a message into the channel where command was triggered from
-      return res.send({
-        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-        data: {
-          // Fetches a random emoji to send from a helper function
-          content: 'hello world ' + getRandomEmoji(),
-        },
-      });
-    }
-    // "challenge" command
-    if (name === 'challenge' && id) {
-      const userId = req.body.member.user.id;
-      // User's object choice
-      const objectName = req.body.data.options[0].value;
-
-      // Create active game using message ID as the game ID
-      activeGames[id] = {
-        id: userId,
-        objectName,
-      };
-
-      return res.send({
-        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-        data: {
-          // Fetches a random emoji to send from a helper function
-          content: `Rock papers scissors challenge from <@${userId}>`,
-          components: [
-            {
-              type: MessageComponentTypes.ACTION_ROW,
-              components: [
-                {
-                  type: MessageComponentTypes.BUTTON,
-                  // Append the game ID to use later on
-                  custom_id: `accept_button_${req.body.id}`,
-                  label: 'Accept',
-                  style: ButtonStyleTypes.PRIMARY,
-                },
-              ],
-            },
-          ],
-        },
-      });
-    }
-  }
-
-  /**
-   * Handle requests from interactive components
-   * See https://discord.com/developers/docs/interactions/message-components#responding-to-a-component-interaction
-   */
-  if (type === InteractionType.MESSAGE_COMPONENT) {
-    // custom_id set in payload when sending message component
-    const componentId = data.custom_id;
-
-    if (componentId.startsWith('accept_button_')) {
-      // get the associated game ID
-      const gameId = componentId.replace('accept_button_', '');
-      // Delete message with token in request body
-      const endpoint = `webhooks/${process.env.APP_ID}/${req.body.token}/messages/${req.body.message.id}`;
-      try {
-        await res.send({
-          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-          data: {
-            content: 'What is your object of choice?',
-            // Indicates it'll be an ephemeral message
-            flags: InteractionResponseFlags.EPHEMERAL,
-            components: [
-              {
-                type: MessageComponentTypes.ACTION_ROW,
-                components: [
-                  {
-                    type: MessageComponentTypes.STRING_SELECT,
-                    // Append game ID
-                    custom_id: `select_choice_${gameId}`,
-                    options: getShuffledOptions(),
-                  },
-                ],
-              },
-            ],
-          },
-        });
-        // Delete previous message
-        await DiscordRequest(endpoint, { method: 'DELETE' });
-      } catch (err) {
-        console.error('Error sending message:', err);
-      }
-    } else if (componentId.startsWith('select_choice_')) {
-      // get the associated game ID
-      const gameId = componentId.replace('select_choice_', '');
-
-      if (activeGames[gameId]) {
-        // Get user ID and object choice for responding user
-        const userId = req.body.member.user.id;
-        const objectName = data.values[0];
-        // Calculate result from helper function
-        const resultStr = getResult(activeGames[gameId], {
-          id: userId,
-          objectName,
-        });
-
-        // Remove game from storage
-        delete activeGames[gameId];
-        // Update message with token in request body
-        const endpoint = `webhooks/${process.env.APP_ID}/${req.body.token}/messages/${req.body.message.id}`;
-
-        try {
-          // Send results
-          await res.send({
-            type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-            data: { content: resultStr },
-          });
-          // Update ephemeral message
-          await DiscordRequest(endpoint, {
-            method: 'PATCH',
-            body: {
-              content: 'Nice choice ' + getRandomEmoji(),
-              components: [],
-            },
-          });
-        } catch (err) {
-          console.error('Error sending message:', err);
-        }
-      }
-    }
-  }
 });
 
-app.listen(PORT, () => {
-  console.log('Listening on port', PORT);
-});
+client.on('error', async error => {
+  Logger(`Client Error: ${error}`, client)
+})
+
+
+client.login(process.env.DISCORD_TOKEN).then(() => console.log(`${client.user.tag} Online!`));
