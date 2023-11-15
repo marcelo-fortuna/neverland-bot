@@ -1,6 +1,0 @@
-{
-    "token": "your-bot-token-is-here",
-    "clientId": "your-bot-application-id-is-hre",
-	"guildId": "yout-server-id-is-here",
-    "inviteLink": "https://discord.com/oauth2/authorize?client_id=clientId&permissions=8&scope=bot%20applications.commands"
-}
