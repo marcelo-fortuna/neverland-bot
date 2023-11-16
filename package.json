@@ -12,7 +12,7 @@
     "start": "npm run loadslash && node app.js",
     "dev": "npm run loadslash && nodemon app.js"
   },
-  "author": "Nuts Neverland, RoyaL @orobertofc",
+  "author": "Nuts @marcelo-fortuna, RoyaL @orobertofc",
   "license": "ISC",
   "dependencies": {
     "discord.js": "^14.14.1",
